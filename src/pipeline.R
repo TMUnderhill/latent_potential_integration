@@ -1,39 +1,52 @@
 #!/usr/bin/env Rscript
+
+# Load dependencies 
 library(argparse)
 library(Matrix)
-parser <- ArgumentParser(description='pipeline')
-parser$add_argument("--rdata", dest = "rdata")
-parser$add_argument("--celltype", dest = "celltype")
-parser$add_argument("--tssranges", dest = "tssranges")
-parser$add_argument("--fragments", dest = "fragments")
-parser$add_argument("--overlapping", dest = "overlapping")
-parser$add_argument("--nbatches", dest = "nbatches", type = "integer")
-parser$add_argument("--cpm_cutoff", dest = "cpm_cutoff", type = "double")
-parser$add_argument("--srand", dest = "srand", type = "integer")
-# args <- parser$parse_args(strsplit("--rdata bat.Rdata --celltype FAP --tssranges wstssranges.Rdata --fragments fragments_bat.tsv.gz --overlapping overlapingTSS500.csv --nbatches 10 --cpm_cutoff 2.5 --srand 0", split = " ")[[1]])
-args <- parser$parse_args()
+library(Seurat)
+library(plyr)
+library(limma)
+library(edgeR)
+library(dplyr)
+library(svglite)
+library(tools)
+library(Signac)
 
-message(paste("Loading RData file: ", args$rdata))
+parser <- ArgumentParser(description='Pipeline for generating latent potential RNA vs. ATAC plots')
+parser$add_argument("--rdata", dest = "rdata", help = "Path to .RData file containing RNA and ATAC sample")
+parser$add_argument("--celltype", dest = "celltype", help = "Cell-type key")
+parser$add_argument("--tssranges", dest = "tssranges", help = "Path to TSS ranges .RData file")
+parser$add_argument("--fragments", dest = "fragments", help = "Path to fragments .tsv.gz file corresponding to .RData file")
+parser$add_argument("--overlapping", dest = "overlapping", help = "Path to .csv file listing overlapping TSS")
+parser$add_argument("--nbatches", dest = "nbatches", type = "integer", help = "Number of pseudoreplicates")
+parser$add_argument("--cpm_cutoff", dest = "cpm_cutoff", type = "double", help = "CPM cutoff")
+parser$add_argument("--srand", dest = "srand", type = "integer", help = "Random seed")
+args <- parser$parse_args(strsplit("--rdata ../data/bat.Rdata --celltype FAP --tssranges ../data/wstssranges.Rdata --fragments ../data/fragments_bat.tsv.gz --overlapping ../data/overlapingTSS500.csv --nbatches 10 --cpm_cutoff 2.5 --srand 0", split = " ")[[1]])
+# args <- parser$parse_args()
+
+message("Loading RData file: ", args$rdata)
 load(args$rdata)
-message(paste("Loading TSSranges file: "), args$tssranges)
+message("Loading TSSranges file: ", args$tssranges)
 load(args$tssranges)
 
-# tissue name
-tissue_name <- strsplit(args$rdata, '\\.')[[1]][1]
+# Fetch tissue and celltype name
+tissue_name <- file_path_sans_ext(basename(args$rdata))
 celltype_name <- args$celltype
+# build output file name prefix as {tissue}_{celltype}
 filename_prefix <- paste(tissue_name, celltype_name, sep = "_")
+message("Output filename prefix: ", filename_prefix)
 
+# Fetch RNA/ATAC samples now that we have loaded the .RData files 
 sample_rna <- get(paste(tissue_name, "rna", sep = '_'))
 sample_atac <- get(tissue_name)
 
-# some necessary redirects here to local fragment file 
+# A necessary redirect here to local fragment file instead of what was originally saved in the RData
 sample_atac@assays$peaks@fragments[[1]]@path <- args$fragments 
 
 message("Constructing ATAC FeatureMatrix")
 counts_atac <- FeatureMatrix(fragments = sample_atac@assays$peaks@fragments, features = wstssranges, cells = colnames(sample_atac))
 
 message("Constructing ATAC counts matrix")
-library(Seurat)
 # construct lookup table GRanges <--> corresponding TSS
 # wstssranges contains TSS +/- 200bp
 genes <- wstssranges$gene_name
@@ -68,7 +81,6 @@ counts_rna_agg <- lapply(1:args$nbatches, function(x) rowSums(counts_rna[, batch
 counts_atac_agg <- lapply(1:args$nbatches, function(x) rowSums(counts_atac[, batch_idx_atac == x]))
 # find common genes
 # should replace this with outer join and remove genes that got 0 reads for ATAC
-library(plyr)
 # genes_common <- intersect(names(counts_rna_agg[[1]]), names(counts_atac_agg[[1]]))
 # drop blacklisted genes
 # genes_common <- genes_common[!grepl("Rik", genes_common) & !grepl(paste0("Gm","[0-9]"), genes_common) & !grepl(paste0("Mir","[0-9]"), genes_common) & !grepl("mt-", genes_common) & !grepl("RP23-", genes_common) & !grepl("RP24-", genes_common) & !grepl("os$", genes_common) & !grepl(paste0("Olfr","[0-9]"), genes_common)& !grepl(paste0("AC","[0-9]"), genes_common)]
@@ -94,10 +106,6 @@ rna_atac_summ <- rna_atac_summ[keep_genes, ]
 rna_atac_summ <- rna_atac_summ[!is.na(rowSums(rna_atac_summ)), ] 
 # rna_atac_summ[is.na(rna_atac_summ)] <- 0 # if we want to keep RNA
 
-library(limma)
-library(edgeR)
-library(dplyr)
-library(svglite)
 
 d0 <- DGEList(rna_atac_summ)
 d0 <- calcNormFactors(d0)
