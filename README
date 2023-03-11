@@ -1,4 +1,4 @@
 # Latent potential: scRNA-seq, scATAC-seq integration code 
 
-The custom scripts in this repository take as an input preprocessed scRNA-seq/scATAC-seq data as `.RData` files. 
+The custom scripts in this repository take as an input preprocessed scRNA-seq/scATAC-seq data in the form of a Seurat/Signac object saved as as `.RData` files. 
 
