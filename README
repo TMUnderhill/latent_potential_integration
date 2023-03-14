@@ -1,4 +1,4 @@
 # Latent potential: scRNA-seq, scATAC-seq integration code 
 
-5)	A pipeline has been developed to integrate scRNA-seq and scATAC-seq datasets to enable the identification of loci with latent potential. This method identifies genes with limited expression (scRNA-seq), but with open chromatin (scATAC-seq). Latent potential involves determination of genes with unrealized transcription potential. The custom scripts in this repository take as an input pre-processed scRNA-seq/scATAC-seq data in the form of a Seurat/Signac object with annotated clusters for both modalities, saved as `.RData` files. 
+5)	A pipeline has been developed to integrate scRNA-seq and scATAC-seq datasets to enable the identification of loci with latent potential (i.e., unrealilzed transcriptional potential). This method identifies genes with limited expression (scRNA-seq), but with open chromatin (scATAC-seq). The custom scripts in this repository take as an input pre-processed scRNA-seq/scATAC-seq data in the form of a Seurat/Signac object with annotated clusters for both modalities, saved as `.RData` files. 
 
