@@ -1,4 +1,4 @@
 # Latent potential: scRNA-seq, scATAC-seq integration code 
 
-The custom scripts in this repository take as an input pre-processed scRNA-seq/scATAC-seq data in the form of a Seurat/Signac object with annotated clusters for both modalities, saved as `.RData` files. 
+Latent potential involves determination of genes withunrealized potential to be expressed.  This involves integration of scRNA-seq and corresponding scATAC-seq datasets. The custom scripts in this repository take as an input pre-processed scRNA-seq/scATAC-seq data in the form of a Seurat/Signac object with annotated clusters for both modalities, saved as `.RData` files. 
 
